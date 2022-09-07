@@ -1,0 +1,1 @@
+bootdata.o: bootdata.c

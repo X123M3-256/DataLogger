@@ -1,0 +1,16 @@
+
+enum 
+{
+OFF,
+SOLID_YELLOW,
+BLINK_YELLOW,
+SOLID_GREEN,
+BLINK_GREEN,
+SOLID_BOTH,
+SOLID_YELLOW_BLINK_GREEN,
+BLINK_BOTH,
+};
+
+
+void led_init();
+void led_set(uint8_t state);

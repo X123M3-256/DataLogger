@@ -448,7 +448,17 @@ void console_log(char** argv,int argc)
 {
 	if(argc==0)
 	{
-	usb_serial->write("log: No command given\r\n");
+		if(!log_is_running())
+		{
+			if(log_start())usb_serial->write("log: Logging started\r\n");
+			else usb_serial->write("log: Could not start logging\r\n");
+		}
+		else
+		{
+		log_stop();
+		usb_serial->write("log: Logging stopped\r\n");
+		}
+	//usb_serial->write("log: No command given\r\n");
 	return;
 	}
 	if(strcmp(argv[0],"start")==0)log_start();

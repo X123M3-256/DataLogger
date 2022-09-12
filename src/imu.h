@@ -76,26 +76,25 @@ QMC_OVERSAMPLING_64X=0xC0
 };
 
 
-const uint32_t SAMPLE_TIMESTAMP_MASK=0x3FFFFFFF;
-const uint32_t SAMPLE_HAS_MAG=0x40000000;
+const uint64_t SAMPLE_TIMESTAMP_MASK=0x3FFFFFFFFFFFFFFFULL;
+const uint64_t SAMPLE_HAS_MAG=0x4000000000000000ULL;
 
 typedef struct
 {
-uint32_t timestamp;
+uint64_t timestamp;
 vector3_t accel;
 vector3_t gyro;
 vector3_t mag;
-}sample_t;
-
-vector3_t vector3(double x,double y,double z);
+}imu_t;
 
 void imu_reset_calibration();
 void imu_set_calibration(vector3_t accel_bias_new,double* accel_matrix_new,vector3_t gyro_bias_new,double* gyro_matrix_new,vector3_t mag_bias_new,double* mag_matrix_new);
-int imu_load_calibration(const char* path);
+bool imu_load_calibration(const char* path);
 
 bool imu_init();
-int imu_available_samples();
+int imu_available();
 bool imu_read(uint64_t timestamp);
-bool imu_get_next_sample(sample_t* sample);
+bool imu_get(imu_t* sample);
+int imu_get(imu_t* samples,int num);
 
 #endif

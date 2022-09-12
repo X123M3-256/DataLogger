@@ -5,7 +5,7 @@
 #include "imu.h"
 #include "timer.h"
 
-ring_buffer<sample_t,256> sample_buffer;
+ring_buffer<imu_t,256> sample_buffer;
 vector3_t accel_bias={0,0,0};
 vector3_t gyro_bias={0,0,0};
 vector3_t mag_bias={0,0,0};
@@ -21,7 +21,8 @@ return vector3(matrix[0]*vec.x+matrix[1]*vec.y+matrix[2]*vec.z,matrix[3]*vec.x+m
 
 bool imu_read(uint64_t timestamp)
 {
-sample_t sample;
+imu_t sample;
+
 sample.timestamp=timestamp;
 
 //Read data from IMU
@@ -87,7 +88,7 @@ mag_bias=mag_bias_new;
 
 
 
-
+/*
 bool is_whitespace(uint8_t c)
 {
 return c==' '||c=='\t';
@@ -115,10 +116,11 @@ size_t parse_name(int file,uint8_t* buf,size_t len)
 consume_whitespace(file);
 return read_while(file,valid_name_char,buf,len);
 }
-
+*/
 
 bool imu_load_calibration(const char* path)
 {
+/*
 log_message(LOG_IMU|LOG_DEBUG,"Loading calibration file");
 
 io_file file;
@@ -170,7 +172,7 @@ int values_loaded=0;
 
 imu_set_calibration(accel_bias,accel_matrix,gyro_bias,gyro_matrix,mag_bias,mag_matrix);
 */
-file.close(file);
+//file.close(file);
 return true;
 }
 
@@ -217,7 +219,7 @@ value=QMC_MODE_CONTINUOUS|QMC_ODR_10_HZ|QMC_SCALE_2G|QMC_OVERSAMPLING_64X;
 return true;
 }
 
-int imu_available_samples()
+int imu_available()
 {
 timer_wait_for_lock();
 size_t avail=sample_buffer.available();
@@ -225,10 +227,30 @@ timer_unlock();
 return avail;
 }
 
-bool imu_get_next_sample(sample_t* sample)
+
+bool imu_get(imu_t* sample)
 {
 timer_wait_for_lock();
-bool success=sample_buffer.pop(sample);
+	if(!sample_buffer.pop(sample))
+	{
+	timer_unlock();
+	return false;
+	}
 timer_unlock();
-return success;
+return true;
+}
+
+int imu_get(imu_t* samples,int num)
+{
+timer_wait_for_lock();
+	for(int i=0;i<num;i++)
+	{
+		if(!sample_buffer.pop(samples+i))
+		{
+		timer_unlock();
+		return i;
+		}
+	}
+timer_unlock();
+return num;
 }

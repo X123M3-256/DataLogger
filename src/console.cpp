@@ -285,12 +285,12 @@ vector3_t gyro_integral=vector3(0,0,0);
 	{
 	//Accumulate samples until we get a magnetometer reading
 	int samples_loaded=0;
-	sample_t samples[10];
+	imu_t samples[10];
 	int ready=0;
 	vector3_t accel=vector3(0,0,0);
 	vector3_t gyro=vector3(0,0,0);
 	vector3_t mag=vector3(0,0,0);
-		while(!ready&&imu_get_next_sample(samples+samples_loaded))
+		while(!ready&&imu_get(samples+samples_loaded,1))
 		{
 		accel=vector3_add(accel,samples[samples_loaded].accel);
 		gyro=vector3_add(gyro,samples[samples_loaded].gyro);

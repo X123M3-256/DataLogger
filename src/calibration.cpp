@@ -10,7 +10,7 @@
 #define MAX_MAG_SAMPLES 2048
 #define MAX_GYRO_ROTATIONS 64
 
-sample_t calibration_buffer[CALIBRATION_BUFFER_SIZE];
+imu_t calibration_buffer[CALIBRATION_BUFFER_SIZE];
 int calibration_state=0;
 int accel_batches_processed=0;
 int gyro_batches_processed=0;
@@ -232,14 +232,15 @@ return AXIS_NONE;
 
 int calibration_process_samples(vector3_t* batch_accel_mean,vector3_t* batch_gyro_mean,vector3_t* batch_accel_var)
 {
-	if(imu_available_samples()>=CALIBRATION_BUFFER_SIZE)
+	if(imu_available()>=CALIBRATION_BUFFER_SIZE)
 	{
 	//Get samples
-		for(int i=0;i<CALIBRATION_BUFFER_SIZE;i++)
+		if(imu_get(calibration_buffer,CALIBRATION_BUFFER_SIZE)!=CALIBRATION_BUFFER_SIZE)
 		{
-		imu_get_next_sample(calibration_buffer+i);
+		log_message(LOG_CALIBRATION|LOG_ERROR,"Did not recieve expected number of IMU samples");
+		return 0;
 		}
-
+	
 	//Compute sample means
 	vector3_t accel_mean=vector3(0,0,0);
 	vector3_t gyro_mean=vector3(0,0,0);

@@ -1,7 +1,7 @@
 
 void timer_start();
 uint64_t timer_now();
-void timer_set_gps_time(uint64_t timestamp,bool has_fix);
+void timer_set_gps_time(uint64_t timestamp);
 
 
 uint64_t timer_now();

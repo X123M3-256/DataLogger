@@ -5,7 +5,6 @@
 enum
 {
 TIMER_LOCK=0x1,
-TIMER_LOCK_FAILED=0x2,
 TIMER_TIME_SYNC=0x4,
 TIMER_READ_COMPLETE=0x8,
 
@@ -76,28 +75,31 @@ return;
 
 void isr_timer()
 {
+//Increment timestamp by 10ms
+timestamp+=10;
+
 /*TODO consider using interrupt pin to sample the IMU at the native 104Hz. Then we would know what time
 an IMU sample was actually collected (even if this would be rounded for computations, it may be useful 
 to know if a delayed sample should be treated as a missed sample).*/
 
-//Sample IMU every 10ms
-	if(timestamp%10==0||isr_flags&TIMER_LOCK_FAILED)
+//Sample IMU
+	if(timer_lock())
 	{
-		if(timer_lock())
-		{
-		isr_flags&=~TIMER_LOCK_FAILED;
-		imu_read(timestamp);
-		timer_unlock();
-		}else isr_flags|=TIMER_LOCK_FAILED;
-	isr_flags|=TIMER_READ_COMPLETE;
+	imu_read(timestamp);
+	timer_unlock();
 	}
+isr_flags|=TIMER_READ_COMPLETE;
+
 //If it has been more than 10 seconds since the last PPS, assume the interrupt timer may not be synchronized 
 //to the GPS time (this is a fairly conservative number, but we want to make sure that if there are timestamp 
 //errors detected then they do in fact signal a bug)
-	if(timestamp>pps_timestamp+10000)isr_flags&=~TIMER_TIME_SYNC;
-
-//Increment timestamp by 1ms
-timestamp++;
+	if(timestamp>pps_timestamp+10000)
+	{
+	//Serial.println("Sync lost");
+	//Serial.print((int)pps_timestamp);
+	//Serial.println();
+	isr_flags&=~TIMER_TIME_SYNC;
+	}
 }
 
 void isr_pps()
@@ -107,34 +109,36 @@ we assume that this lag falls in the range 0<=lag<1000ms, then the current time 
 timestamp rounded up to the next second.*/
 uint64_t timestamp_from_packets=1000*((gps_timestamp+999)/1000);
 
-/*We have no absolute time reference until the GPS has acquired a fix, so the time will start counting from zero.
-If this is the first PPS interrupt since the fix was obtained, then the IMU timestamp should be re-initialized with
-the timestamp obtained from the GPS data*/ 
-	if(!(isr_flags&TIMER_TIME_SYNC))
-	{
-	timestamp=timestamp_from_packets;
-	isr_flags|=TIMER_TIME_SYNC;
-	return;
-	}
 
 /*Teensy clock will drift slightly relative to GPS clock -  by roughly approx 20us/s or 1ms
 every 50s. Therefore, we restart the IMU timer when a PPS signal is recieved to keep them synchronized.*/
-timer.begin(isr_timer,1000);
+timer.begin(isr_timer,10000);
 
 /*The clock drift could be positive or negative, so the timer interrupt corresponding to the current timestamp 
 may run before or after the PPS interrupt. If we determine that the timer interrupt for the current time has not 
 yet run, we invoke it here*/
-	if(timestamp%1000==999)isr_timer();
+	if(timestamp%1000==990)isr_timer();
 
+/*We have no absolute time reference until the GPS has acquired a fix, so the time will start counting from zero.
+If this is the first PPS interrupt since the fix was obtained, then the IMU timestamp should be re-initialized with
+the timestamp obtained from the GPS data*/ 
+	if(!(isr_flags&TIMER_TIME_SYNC)&&timestamp_from_packets>0)
+	{
+	timestamp=timestamp_from_packets;
+	isr_flags|=TIMER_TIME_SYNC;
+	}
 
 //At this point, the current timestamp should match the value obtained from the GPS data. If it doesn't, then we flag 
 //an error. I believe that this should never happen, so if the flag is ever set it is expected to signal a bug.
-	if(timestamp!=timestamp_from_packets)
+//TODO check for and log these error once logging is implemented
+	if(timestamp_from_packets!=0&&timestamp!=timestamp_from_packets)
 	{
 	timestamp=timestamp_from_packets;//Re-synchronize
 	isr_flags|=TIMER_TIME_ERROR;
 	}
-//TODO check for and log these error once logging is implemented
+
+//Update PPS timestamp
+pps_timestamp=timestamp;
 }
 
 //Return the current timestamp
@@ -157,12 +161,12 @@ void timer_start()
 //Set PPS pin
 pinMode(2, INPUT);
 //Attach interrupts
-timer.begin(isr_timer,1000);
+timer.begin(isr_timer,10000);
 attachInterrupt(digitalPinToInterrupt(2),isr_pps,RISING);
 isr_flags|=TIMER_RUNNING;
 }
 
-void timer_set_gps_time(uint64_t timestamp,bool has_fix)
+void timer_set_gps_time(uint64_t timestamp)
 {
 noInterrupts();
 gps_timestamp=timestamp;

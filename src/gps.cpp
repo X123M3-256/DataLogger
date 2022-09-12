@@ -79,8 +79,10 @@ serial_ports[1]->discard(6);
 
 //Read payload
 size_t bytes_read=0;
-	//Parse UBX-NAV-PVT
+	//UBX-NAV-PVT
 	if(ubx->clss==1&&ubx->id==7&&ubx->length==sizeof(ubx_nav_pvt_t))bytes_read=serial_ports[1]->read((uint8_t*)(&(ubx->nav_pvt)),sizeof(ubx_nav_pvt_t));
+	//UBX-NAV-TIMELS
+	else if(ubx->clss==1&&ubx->id==0x26&&ubx->length==sizeof(ubx_nav_timels_t))bytes_read=serial_ports[1]->read((uint8_t*)(&(ubx->nav_timels)),sizeof(ubx_nav_timels_t));
 	//UBX-ACK-NACK
 	else if(ubx->clss==5&&ubx->id==0&&ubx->length==sizeof(ubx_ack_nack_t))bytes_read=serial_ports[1]->read((uint8_t*)(&(ubx->ack_nack)),sizeof(ubx_ack_nack_t));
 	//UBX-ACK-ACK
@@ -88,7 +90,7 @@ size_t bytes_read=0;
 	//Unrecognized packet
 	else
 	{
-	Serial.println("Unrecognized UBX packet\n");
+	usb_serial->writef("Unrecognized UBX packet (Class 0x%x ID 0x%x Length %d)\r\n",ubx->clss,ubx->id,ubx->length);
 	ubx_print_raw(ubx);
 	usb_serial->write("\r\n");
 	serial_ports[1]->discard(ubx->length+2);
@@ -132,6 +134,30 @@ log_message(LOG_GPS|LOG_DEBUG,"Timed out while waiting for acknowledgement");
 return false;
 }
 
+bool ubx_query_ls(ubx_t* ubx_res)
+{
+ubx_t ubx={0};
+ubx.clss=1;
+ubx.id=0x26;
+ubx.length=0;
+ubx_send(&ubx);
+	
+//Wait for response
+	for(int i=0;i<100;i++)
+	{
+		while(ubx_receive(ubx_res))
+		{
+			if(ubx_res->clss==1&&ubx_res->id==0x26)
+			{
+			return true;
+			}
+		}
+	delay(10);
+	}
+//Timed out; no response
+log_message(LOG_GPS|LOG_DEBUG,"Timed out while waiting for acknowledgement");
+return false;
+}
 
 //Public GPS functions
 enum
@@ -145,6 +171,7 @@ GPS_INIT_COMPLETE,
 
 bool gps_init(bool gps_already_configured)
 {
+static int gps_init_state=GPS_INIT_CFG_PRT;
 
 	//If the Teensy is restarted without powering off the GPS, the GPS configuration commands tend to fail
 	//So it's convenient to be able to skip these steps when debugging
@@ -159,10 +186,6 @@ bool gps_init(bool gps_already_configured)
 		}
 	return true;
 	}
-
-
-static int gps_init_state=GPS_INIT_CFG_PRT;
-
 
 log_message(LOG_GPS|LOG_DEBUG,"Starting GPS configuration");
 	if(gps_init_state==GPS_INIT_CFG_PRT)
@@ -263,6 +286,8 @@ log_message(LOG_GPS|LOG_DEBUG,"Starting GPS configuration");
 		}
 	gps_init_state=GPS_INIT_COMPLETE;
 	}
+
+//TODO consider using UBX-CFG-TP5 to set the PPS pulse to 1KHz and use that instead of interval timer
 
 //TODO consider configuring SBAS (UBX-CFG-SBAS?)
 return true;

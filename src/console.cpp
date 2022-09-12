@@ -412,6 +412,20 @@ int lines=0;
 	}
 }
 
+void console_gps_leap()
+{
+ubx_t ubx;
+	if(ubx_query_ls(&ubx))
+	{
+		if(ubx.nav_timels.src_of_curr_ls==0)return false;
+	usb_serial->writef("Current leap seconds offset: %d\r\n",ubx.nav_timels.curr_ls);
+	usb_serial->writef("Source of leap second count: %d\r\n",ubx.nav_timels.src_of_curr_ls);
+	}
+	else usb_serial->write("gps: UBX-NAV-TIMELS recieved no response");
+usb_serial->flush();
+}
+
+
 void console_gps(char** argv,int argc)
 {
 	if(argc==0)
@@ -419,9 +433,13 @@ void console_gps(char** argv,int argc)
 	usb_serial->write("gps: No command given\r\n");
 	return;
 	}
-	if(strcmp(argv[0],"show")==0)
+	else if(strcmp(argv[0],"show")==0)
 	{
 	console_gps_show();
+	}
+	else if(strcmp(argv[0],"leap")==0)
+	{
+	console_gps_leap();
 	}
 }
 

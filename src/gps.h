@@ -39,6 +39,22 @@ uint16_t magnetic_declination_acc;
 
 typedef struct __attribute__((__packed__))
 {
+uint32_t itow;
+uint8_t version;
+uint8_t reserved_1[3];
+uint8_t src_of_curr_ls;
+int8_t curr_ls;
+uint8_t src_of_ls_change;
+int8_t ls_change;
+int32_t time_to_ls_event;
+uint16_t date_of_ls_gps_wn;
+uint16_t date_of_ls_gps_dn;
+uint8_t reserved[3];
+uint8_t valid;
+}ubx_nav_timels_t;
+
+typedef struct __attribute__((__packed__))
+{
 uint8_t clss;
 uint8_t id;
 }ubx_ack_ack_t;
@@ -152,6 +168,7 @@ union
 	ubx_ack_ack_t ack_ack;
 	ubx_ack_nack_t ack_nack;
 	ubx_nav_pvt_t nav_pvt;
+	ubx_nav_timels_t nav_timels;
 	ubx_cfg_prt_t cfg_prt;
 	ubx_cfg_msg_t cfg_msg;
 	ubx_cfg_rate_t cfg_rate;
@@ -167,18 +184,23 @@ typedef struct
 {
 uint64_t timestamp;
 uint32_t num_sv;
-double lon;//TODO these can't all be doubles
+double lon;
 double lat;
-double alt;
-double vel_n;
-double vel_e;
-double vel_d;
-double horz_acc;
-double vert_acc;
-double vel_acc;
-double dop;
-}gps_sample_t;
+float alt;
+float vel_n;
+float vel_e;
+float vel_d;
+float horz_acc;
+float vert_acc;
+float vel_acc;
+float dop;
+}gps_t;
 
 
 
 bool gps_init(bool gps_already_configured=false);
+void gps_update();
+bool ubx_query_ls(ubx_t* ubx);
+
+
+

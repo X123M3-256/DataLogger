@@ -21,9 +21,5 @@ void kalman_update(state_t* state,double* covariance,double* measurement);
 #define MAG_NOISE 0.0001
 #define MAG_DIRECTION vector3(0.342,0,0.9397)
 
-//Add additional uncertainty to account for integration error
-#define INTEGRATION_NOISE  0.005
-
-
 #endif
 

@@ -58,6 +58,13 @@ button_timer.begin(isr_button,10000);
 
 void init()
 {
+//Initialize LED
+led_init();
+led_set(SOLID_YELLOW);
+
+//Initialize button
+button_init();
+
 //Initialize IO
 	while(!io_init())
 	{
@@ -65,24 +72,10 @@ void init()
 	delay(500);
 	}
 
-
-	while(!usb_serial->open(9600,O_READ_WRITE))
-	{
-	log_message(LOG_INIT|LOG_INFO,"Waiting for serial");
-	delay(500);
-	}
-
-led_init();
-log_message(LOG_INIT|LOG_INFO,"Initializing button");
-button_init();
-
-log_message(LOG_INIT|LOG_INFO,"Initializing IO");
-
-
 //Initialize GPS
 int gps_fail_count=0;
 log_message(LOG_INIT|LOG_INFO,"Initializing GPS");
-	while(!gps_init(gps_fail_count>1))//Debug feature - if it fails repeatedly it might be because the GPS is already configured TODO make it so configuration routine works anyway - this is a hack
+	while(!gps_init(gps_fail_count>5))//Debug feature - if it fails repeatedly it might be because the GPS is already configured TODO make it so configuration routine works anyway - this is a hack
 	{
 	led_set(BLINK_YELLOW);
 	delay(500);

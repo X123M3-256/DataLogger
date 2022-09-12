@@ -150,7 +150,8 @@ LOG_GPS=0x20,
 LOG_IMU=0x30,
 LOG_LOG=0x40,
 LOG_IO=0x50,
-LOG_CONSOLE=0x60
+LOG_CONSOLE=0x60,
+LOG_CALIBRATION=0x70
 };
 
 void log_message(int log_level,const char* fmt,...);

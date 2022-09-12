@@ -303,7 +303,7 @@ double res;
 read((uint8_t*)(&res),sizeof(double));
 return res;
 }
-
+/*
 size_t read_while(bool (*f)(uint8_t),uint8_t* buf,size_t len)
 {
 size_t bytes_written=0;
@@ -331,7 +331,7 @@ size_t bytes_written=0;
 	}
 return bytes_written;
 }
-
+*/
 
 
 
@@ -868,12 +868,17 @@ usb_serial=new io_usb_serial();
 serial_ports[0]=usb_serial;
 serial_ports[1]=new io_hardware_serial();
 
+//Attempt to open USB serial so error messages will show (TODO this should really be temporary)
+usb_serial->open(9600,O_READ_WRITE);
+
 //We have serial port
+/*
 	if(!sd.begin(SdioConfig(FIFO_SDIO)))
 	{
 	log_message(LOG_IO|LOG_ERROR,"Failed to initialize SD card");
 	return false;
 	}
+*/
 return true;
 }
 
@@ -921,6 +926,9 @@ int log_level=LOG_INFO;
 		break;
 		case LOG_CONSOLE:
 		usb_serial->write("console: ");
+		break;
+		case LOG_CALIBRATION:
+		usb_serial->write("calibration: ");
 		break;
 		default:
 		break;

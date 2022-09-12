@@ -401,7 +401,7 @@ int lines=0;
 			if(fix_type>=2)
 			{
 		usb_serial->writef("Accuracy speed: %.2fm/s\r\n",ubx.nav_pvt.speed_acc*1e-3);
-		usb_serial->writef("Position DOP  : %.2fm/s\r\n",ubx.nav_pvt.speed_acc*1e-2);
+		usb_serial->writef("Position DOP  : %.2fm/s\r\n",ubx.nav_pvt.position_dop*1e-2);
 		lines+=2;
 			}
 		usb_serial->writef("Satellites    : %d\r\n",ubx.nav_pvt.num_sv);
